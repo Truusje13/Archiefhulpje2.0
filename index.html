@@ -2343,16 +2343,18 @@ async function startIndexing(source, rootName, readWrite = false) {
 // ─── File operations ─────────────────────────────────────────────────────────
 
 async function revealInExplorer(file) {
-  const fullPath = file.fullPath || getFullPath(file);
+  const path = file.path || file.fullPath || getFullPath(file);
+  const displayPath = state.rootName ? `${state.rootName}/${path}` : path;
+
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(fullPath);
-      showToast(`Pad gekopieerd naar klembord:\n${fullPath}`);
+      await navigator.clipboard.writeText(displayPath);
+      showToast(`Pad gekopieerd naar klembord:\n${displayPath}\n\nPlak dit in de verkenner om het bestand te vinden`);
     } else {
-      showToast(`Bestandspad:\n${fullPath}`);
+      showToast(`Bestandspad:\n${displayPath}`);
     }
   } catch (e) {
-    showToast(`Bestandspad:\n${fullPath}`);
+    showToast(`Bestandspad:\n${displayPath}`);
   }
 }
 
