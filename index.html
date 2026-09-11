@@ -2126,9 +2126,7 @@ async function renderDetail(file) {
     ).join('')}</div>` : '<p style="font-size:0.78rem;color:var(--muted);margin-top:0.5rem">Nog geen tags</p>'}
     ${tagSuggestionsHtml}
     <div class="action-bar" id="file-action-bar" ${(file._file || file._handle) ? '' : 'style="display:none"'}>
-      <button class="btn" id="btn-open-file" title="Openen met standaard app">Openen</button>
-      <button class="btn" id="btn-reveal-file" title="Openen in verkenner">In verkenner</button>
-      <button class="btn" id="btn-download-file" title="Downloaden">Download</button>
+      <button class="btn" id="btn-reveal-file" title="Toon bestandspad">Pad tonen</button>
     </div>
 
     <div class="detail-section">
@@ -2190,18 +2188,10 @@ async function renderDetail(file) {
   });
 
   const actionBar = document.getElementById('file-action-bar');
-  console.log('actionBar:', actionBar, 'file._file:', file._file, 'file._handle:', file._handle);
   if (file._file || file._handle) {
     if (actionBar) actionBar.style.display = 'flex';
-    const btnOpen = document.getElementById('btn-open-file');
     const btnReveal = document.getElementById('btn-reveal-file');
-    const btnDownload = document.getElementById('btn-download-file');
-
-    console.log('btnOpen:', btnOpen, 'btnReveal:', btnReveal, 'btnDownload:', btnDownload);
-
-    if (btnOpen) btnOpen.addEventListener('click', () => openFile(file));
     if (btnReveal) btnReveal.addEventListener('click', () => revealInExplorer(file));
-    if (btnDownload) btnDownload.addEventListener('click', () => downloadFile(file));
   } else if (actionBar) {
     actionBar.style.display = 'none';
   }
@@ -2352,64 +2342,17 @@ async function startIndexing(source, rootName, readWrite = false) {
 
 // ─── File operations ─────────────────────────────────────────────────────────
 
-async function openFile(file) {
-  console.log('openFile called:', file);
-  if (!file._file) {
-    showToast('Kan bestand niet openen');
-    return;
-  }
-
-  try {
-    const url = URL.createObjectURL(file._file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast(`${file.name} geopend`);
-  } catch (e) {
-    console.error('openFile error:', e);
-    showToast('Kan bestand niet openen: ' + e.message);
-  }
-}
-
 async function revealInExplorer(file) {
-  console.log('revealInExplorer called:', file);
   const fullPath = file.fullPath || getFullPath(file);
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(fullPath);
       showToast(`Pad gekopieerd naar klembord:\n${fullPath}`);
     } else {
-      showToast(`Bestandspad:\n${fullPath}\n\n(Kopiëren niet ondersteund)`);
+      showToast(`Bestandspad:\n${fullPath}`);
     }
   } catch (e) {
-    console.error('revealInExplorer error:', e);
     showToast(`Bestandspad:\n${fullPath}`);
-  }
-}
-
-async function downloadFile(file) {
-  if (!file._file) {
-    showToast('Kan bestand niet downloaden');
-    return;
-  }
-
-  try {
-    const url = URL.createObjectURL(file._file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast(`${file.name} gedownload`);
-  } catch (e) {
-    showToast('Download mislukt: ' + e.message);
   }
 }
 
