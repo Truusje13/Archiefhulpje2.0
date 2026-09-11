@@ -809,13 +809,6 @@
     <input type="text" class="search-input" id="search" placeholder="Zoek op pad, naam, auteur, koppen, inhoud…" autocomplete="off">
     <div class="autocomplete" id="autocomplete"></div>
   </div>
-  <div style="padding: 0.75rem 1.5rem 0; font-size: 0.85rem;">
-    <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--muted);">
-      <span>Mappad:</span>
-      <input type="text" id="base-path-input" placeholder="Basispad (bijv. C:\Users\...)" style="flex: 1; padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem; font-family: ui-monospace, monospace;">
-      <button class="btn" id="btn-save-path" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Opslaan</button>
-    </label>
-  </div>
   <div class="progress-bar" id="progress-bar">
     <div class="progress-fill" id="progress-fill" style="width: 100%;"></div>
   </div>
@@ -2351,7 +2344,6 @@ async function startIndexing(source, rootName, readWrite = false) {
 }
 
 function askForBasePath() {
-  document.getElementById('base-path-input').value = '';
   const prompt = `Voer het volledige mappad in waar deze bestanden staan.\n\nBijvoorbeeld: C:\\Users\\mmiddelburg\\OneDrive - Waterschap\\...`;
 
   const modal = document.createElement('div');
@@ -2394,7 +2386,6 @@ function askForBasePath() {
   dialog.querySelector('#path-dialog-ok').addEventListener('click', () => {
     const path = input.value.trim();
     setBasePath(path);
-    document.getElementById('base-path-input').value = path;
     modal.remove();
   });
 
@@ -2551,13 +2542,6 @@ document.getElementById('btn-move-group').addEventListener('click', async () => 
 });
 
 renderGroups();
-
-document.getElementById('base-path-input').value = getBasePath();
-document.getElementById('btn-save-path').addEventListener('click', () => {
-  const path = document.getElementById('base-path-input').value.trim();
-  setBasePath(path);
-  showToast(path ? `Mappad opgeslagen:\n${path}` : 'Mappad gewist');
-});
 </script>
 
 
