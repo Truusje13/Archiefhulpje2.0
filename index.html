@@ -2350,7 +2350,6 @@ async function startIndexing(source, rootName, readWrite = false) {
 }
 
 function askForBasePath() {
-  const currentPath = getBasePath();
   const prompt = `Voer het volledige mappad in waar deze bestanden staan.\n\nBijvoorbeeld: C:\\Users\\mmiddelburg\\OneDrive - Waterschap\\...`;
 
   const modal = document.createElement('div');
@@ -2377,7 +2376,7 @@ function askForBasePath() {
   dialog.innerHTML = `
     <h3 style="margin-bottom: 1rem; font-family: var(--font);">Mappad invoeren</h3>
     <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--muted);">${prompt}</p>
-    <input type="text" id="path-dialog-input" value="${currentPath}" placeholder="C:\\Users\\..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-family: ui-monospace, monospace; margin-bottom: 1.5rem; box-sizing: border-box;">
+    <input type="text" id="path-dialog-input" placeholder="C:\\Users\\..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-family: ui-monospace, monospace; margin-bottom: 1.5rem; box-sizing: border-box;">
     <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
       <button id="path-dialog-cancel" class="btn" style="padding: 0.6rem 1.2rem;">Overslaan</button>
       <button id="path-dialog-ok" class="btn btn-primary" style="padding: 0.6rem 1.2rem;">Opslaan</button>
@@ -2389,7 +2388,6 @@ function askForBasePath() {
 
   const input = dialog.querySelector('#path-dialog-input');
   input.focus();
-  input.select();
 
   dialog.querySelector('#path-dialog-ok').addEventListener('click', () => {
     const path = input.value.trim();
