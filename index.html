@@ -2345,6 +2345,67 @@ async function startIndexing(source, rootName, readWrite = false) {
   updateFilterUI();
   renderResults();
   state.indexing = false;
+
+  askForBasePath();
+}
+
+function askForBasePath() {
+  const currentPath = getBasePath();
+  const prompt = `Voer het volledige mappad in waar deze bestanden staan.\n\nBijvoorbeeld: C:\\Users\\mmiddelburg\\OneDrive - Waterschap\\...`;
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 40, 37, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  `;
+
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `
+    background: var(--surface);
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 500px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border);
+  `;
+
+  dialog.innerHTML = `
+    <h3 style="margin-bottom: 1rem; font-family: var(--font);">Mappad invoeren</h3>
+    <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--muted);">${prompt}</p>
+    <input type="text" id="path-dialog-input" value="${currentPath}" placeholder="C:\\Users\\..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-family: ui-monospace, monospace; margin-bottom: 1.5rem; box-sizing: border-box;">
+    <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+      <button id="path-dialog-cancel" class="btn" style="padding: 0.6rem 1.2rem;">Overslaan</button>
+      <button id="path-dialog-ok" class="btn btn-primary" style="padding: 0.6rem 1.2rem;">Opslaan</button>
+    </div>
+  `;
+
+  modal.appendChild(dialog);
+  document.body.appendChild(modal);
+
+  const input = dialog.querySelector('#path-dialog-input');
+  input.focus();
+  input.select();
+
+  dialog.querySelector('#path-dialog-ok').addEventListener('click', () => {
+    const path = input.value.trim();
+    setBasePath(path);
+    document.getElementById('base-path-input').value = path;
+    modal.remove();
+  });
+
+  dialog.querySelector('#path-dialog-cancel').addEventListener('click', () => {
+    modal.remove();
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') dialog.querySelector('#path-dialog-ok').click();
+    if (e.key === 'Escape') modal.remove();
+  });
 }
 
 // ─── File operations ─────────────────────────────────────────────────────────
