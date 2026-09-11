@@ -809,6 +809,13 @@
     <input type="text" class="search-input" id="search" placeholder="Zoek op pad, naam, auteur, koppen, inhoud…" autocomplete="off">
     <div class="autocomplete" id="autocomplete"></div>
   </div>
+  <div style="padding: 0.75rem 1.5rem 0; font-size: 0.85rem;">
+    <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--muted);">
+      <span>Mappad:</span>
+      <input type="text" id="base-path-input" placeholder="Basispad (bijv. C:\Users\...)" style="flex: 1; padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem; font-family: ui-monospace, monospace;">
+      <button class="btn" id="btn-save-path" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Opslaan</button>
+    </label>
+  </div>
   <div class="progress-bar" id="progress-bar">
     <div class="progress-fill" id="progress-fill" style="width: 100%;"></div>
   </div>
@@ -2342,9 +2349,18 @@ async function startIndexing(source, rootName, readWrite = false) {
 
 // ─── File operations ─────────────────────────────────────────────────────────
 
+function getBasePath() {
+  return localStorage.getItem('archief-base-path') || '';
+}
+
+function setBasePath(path) {
+  localStorage.setItem('archief-base-path', path);
+}
+
 async function revealInExplorer(file) {
-  const path = file.path || file.fullPath || getFullPath(file);
-  const displayPath = state.rootName ? `${state.rootName}/${path}` : path;
+  const relativePath = file.path || file.fullPath || getFullPath(file);
+  const basePath = getBasePath();
+  const displayPath = basePath ? `${basePath}\\${relativePath.replace(/\//g, '\\')}` : relativePath;
 
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2474,6 +2490,13 @@ document.getElementById('btn-move-group').addEventListener('click', async () => 
 });
 
 renderGroups();
+
+document.getElementById('base-path-input').value = getBasePath();
+document.getElementById('btn-save-path').addEventListener('click', () => {
+  const path = document.getElementById('base-path-input').value.trim();
+  setBasePath(path);
+  showToast(path ? `Mappad opgeslagen:\n${path}` : 'Mappad gewist');
+});
 </script>
 
 
