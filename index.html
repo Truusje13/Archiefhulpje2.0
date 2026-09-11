@@ -2346,50 +2346,38 @@ async function startIndexing(source, rootName, readWrite = false) {
 // ─── File operations ─────────────────────────────────────────────────────────
 
 async function openFile(file) {
-  if (state.canMove && file._handle) {
-    try {
-      const fileHandle = file._handle;
-      await fileHandle.getFile();
-      if ('launchQueue' in window) {
-        window.launchQueue.setConsumer(launchParams => {});
-      }
-      showToast('Bestand openen... (browserbeperking)');
-    } catch (e) {
-      showToast('Kan bestand niet openen: ' + e.message);
-    }
-  } else if (file._file) {
-    try {
-      const url = URL.createObjectURL(file._file);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (e) {
-      showToast('Kan bestand niet openen');
-    }
+  if (!file._file) {
+    showToast('Kan bestand niet openen');
+    return;
+  }
+
+  try {
+    const url = URL.createObjectURL(file._file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast(`${file.name} geopend`);
+  } catch (e) {
+    showToast('Kan bestand niet openen: ' + e.message);
   }
 }
 
 async function revealInExplorer(file) {
-  if (state.canMove && file._handle) {
-    try {
-      const parentHandle = await file._handle.getParent?.();
-      if (parentHandle) {
-        const fileHandle = file._handle;
-        if (navigator.clipboard?.write) {
-          await navigator.clipboard.write([
-            new ClipboardItem({
-              'text/plain': new Blob([file.path], { type: 'text/plain' }),
-            }),
-          ]);
-          showToast(`Pad naar verkenner gekopieerd:\n${file.path}`);
-        } else {
-          showToast(`Bestandspad: ${file.path}`);
-        }
-      }
-    } catch (e) {
-      showToast('Kan niet in verkenner openen');
+  const fullPath = file.fullPath || getFullPath(file);
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(fullPath);
+      showToast(`Pad gekopieerd naar klembord:\n${fullPath}`);
+    } else {
+      showToast(`Bestandspad:\n${fullPath}\n\n(Kopiëren niet ondersteund)`);
     }
-  } else {
-    showToast(`Bestandspad:\n${file.fullPath || file.path}`);
+  } catch (e) {
+    showToast(`Bestandspad:\n${fullPath}`);
   }
 }
 
