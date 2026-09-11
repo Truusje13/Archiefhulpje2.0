@@ -929,11 +929,6 @@
 
       </select>
     </div>
-    <div class="action-bar" id="file-action-bar" style="display:none;gap:0.5rem;">
-      <button class="btn" id="btn-open-file" title="Openen met standaard app">Openen</button>
-      <button class="btn" id="btn-reveal-file" title="Openen in verkenner">In verkenner</button>
-      <button class="btn" id="btn-download-file" title="Downloaden">Download</button>
-    </div>
     <p style="font-size:0.78rem;color:var(--muted);margin-top:0.5rem">Nog geen tags</p>
     
 
@@ -2130,6 +2125,11 @@ async function renderDetail(file) {
       `<span class="filter-chip active" data-remove-group="${g.id}" style="cursor:pointer">${escapeHtml(g.name)} ✕</span>`
     ).join('')}</div>` : '<p style="font-size:0.78rem;color:var(--muted);margin-top:0.5rem">Nog geen tags</p>'}
     ${tagSuggestionsHtml}
+    <div class="action-bar" id="file-action-bar" ${(file._file || file._handle) ? '' : 'style="display:none"'}>
+      <button class="btn" id="btn-open-file" title="Openen met standaard app">Openen</button>
+      <button class="btn" id="btn-reveal-file" title="Openen in verkenner">In verkenner</button>
+      <button class="btn" id="btn-download-file" title="Downloaden">Download</button>
+    </div>
 
     <div class="detail-section">
       <h3>Metadata</h3>
