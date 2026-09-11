@@ -1441,6 +1441,38 @@ function findSimilar(file, limit = 8) {
 
 // ─── Duplicates detection ────────────────────────────────────────────────────
 
+function levenshteinDistance(a, b) {
+  const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+  for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+  for (let j = 1; j <= b.length; j++) {
+    for (let i = 1; i <= a.length; i++) {
+      const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[j][i] = Math.min(
+        matrix[j][i - 1] + 1,
+        matrix[j - 1][i] + 1,
+        matrix[j - 1][i - 1] + indicator
+      );
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+function stringSimilarity(a, b) {
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 1;
+  const distance = levenshteinDistance(a.toLowerCase(), b.toLowerCase());
+  return 1 - (distance / maxLen);
+}
+
+function normalizeForComparison(filename) {
+  let normalized = filename.toLowerCase();
+  normalized = normalized.replace(/[_\-\s]+v?\d+(\.\d+)?/g, '');
+  normalized = normalized.replace(/\(.*?\)|\[.*?\]|copy|kopie|backup|bak/gi, '');
+  normalized = normalized.replace(/[_\-\s]+/g, ' ').trim();
+  return normalized;
+}
+
 async function hashFile(file) {
   try {
     const buffer = await file.arrayBuffer();
@@ -1516,6 +1548,47 @@ function findDuplicates(files) {
     });
   }
 
+  const similarGroups = new Map();
+  const processed = new Set();
+  let similarGroupId = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    if (processed.has(files[i].id)) continue;
+    const file1 = files[i];
+    const normalized1 = normalizeForComparison(file1.name);
+    const ext1 = file1.ext.toLowerCase();
+    const group = [file1];
+    processed.add(file1.id);
+
+    for (let j = i + 1; j < files.length; j++) {
+      const file2 = files[j];
+      if (processed.has(file2.id)) continue;
+      const normalized2 = normalizeForComparison(file2.name);
+      const ext2 = file2.ext.toLowerCase();
+
+      if (ext1 !== ext2) continue;
+      if (normalized1.length < 3 || normalized2.length < 3) continue;
+
+      const similarity = stringSimilarity(normalized1, normalized2);
+      if (similarity > 0.75) {
+        group.push(file2);
+        processed.add(file2.id);
+      }
+    }
+
+    if (group.length > 1) {
+      similarGroups.set(similarGroupId++, group);
+    }
+  }
+
+  if (similarGroups.size > 0) {
+    duplicates.push({
+      type: 'similar',
+      label: 'Mogelijke dubbelingen (versies, herbenoemde kopieën)',
+      groups: similarGroups,
+    });
+  }
+
   return duplicates;
 }
 
@@ -1542,12 +1615,21 @@ function renderDuplicates(duplicates) {
   let html = '';
   for (const dupType of duplicates) {
     for (const [groupKey, files] of dupType.groups) {
+      let typeLabel = '';
+      if (dupType.type === 'name') {
+        typeLabel = 'Exact gelijke naam';
+      } else if (dupType.type === 'content') {
+        typeLabel = 'Identieke bestandsinhoud';
+      } else if (dupType.type === 'similar') {
+        typeLabel = 'Mogelijke versie of herbenoemd';
+      }
+
       html += `
         <div class="duplicate-group">
           <div class="duplicate-group-header">
             <div>
               <div class="duplicate-group-title">${files[0].name}</div>
-              <div style="font-size:0.75rem;color:var(--muted);margin-top:0.25rem">${dupType.type === 'name' ? 'Dezelfde naam in verschillende mappen' : 'Identieke bestandsinhoud'}</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:0.25rem">${typeLabel}</div>
             </div>
             <div class="duplicate-group-count">${files.length} bestanden</div>
           </div>
