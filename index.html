@@ -926,8 +926,13 @@
     <div class="action-bar">
       <select id="add-to-group-select" class="btn" style="flex:1">
         <option value="">Toevoegen aan groep…</option>
-        
+
       </select>
+    </div>
+    <div class="action-bar" id="file-action-bar" style="display:none;gap:0.5rem;">
+      <button class="btn" id="btn-open-file" title="Openen met standaard app">Openen</button>
+      <button class="btn" id="btn-reveal-file" title="Openen in verkenner">In verkenner</button>
+      <button class="btn" id="btn-download-file" title="Downloaden">Download</button>
     </div>
     <p style="font-size:0.78rem;color:var(--muted);margin-top:0.5rem">Nog geen tags</p>
     
@@ -2184,6 +2189,16 @@ async function renderDetail(file) {
     });
   });
 
+  const actionBar = document.getElementById('file-action-bar');
+  if (file._file || file._handle) {
+    actionBar.style.display = 'flex';
+    document.getElementById('btn-open-file').onclick = () => openFile(file);
+    document.getElementById('btn-reveal-file').onclick = () => revealInExplorer(file);
+    document.getElementById('btn-download-file').onclick = () => downloadFile(file);
+  } else {
+    actionBar.style.display = 'none';
+  }
+
   panel.querySelectorAll('[data-suggest-group]').forEach(el => {
     el.addEventListener('click', () => {
       const groupId = el.dataset.suggestGroup;
@@ -2326,6 +2341,77 @@ async function startIndexing(source, rootName, readWrite = false) {
   updateFilterUI();
   renderResults();
   state.indexing = false;
+}
+
+// ─── File operations ─────────────────────────────────────────────────────────
+
+async function openFile(file) {
+  if (state.canMove && file._handle) {
+    try {
+      const fileHandle = file._handle;
+      await fileHandle.getFile();
+      if ('launchQueue' in window) {
+        window.launchQueue.setConsumer(launchParams => {});
+      }
+      showToast('Bestand openen... (browserbeperking)');
+    } catch (e) {
+      showToast('Kan bestand niet openen: ' + e.message);
+    }
+  } else if (file._file) {
+    try {
+      const url = URL.createObjectURL(file._file);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      showToast('Kan bestand niet openen');
+    }
+  }
+}
+
+async function revealInExplorer(file) {
+  if (state.canMove && file._handle) {
+    try {
+      const parentHandle = await file._handle.getParent?.();
+      if (parentHandle) {
+        const fileHandle = file._handle;
+        if (navigator.clipboard?.write) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/plain': new Blob([file.path], { type: 'text/plain' }),
+            }),
+          ]);
+          showToast(`Pad naar verkenner gekopieerd:\n${file.path}`);
+        } else {
+          showToast(`Bestandspad: ${file.path}`);
+        }
+      }
+    } catch (e) {
+      showToast('Kan niet in verkenner openen');
+    }
+  } else {
+    showToast(`Bestandspad:\n${file.fullPath || file.path}`);
+  }
+}
+
+async function downloadFile(file) {
+  if (!file._file) {
+    showToast('Kan bestand niet downloaden');
+    return;
+  }
+
+  try {
+    const url = URL.createObjectURL(file._file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`${file.name} gedownload`);
+  } catch (e) {
+    showToast('Download mislukt: ' + e.message);
+  }
 }
 
 // ─── Tab switching ───────────────────────────────────────────────────────────
