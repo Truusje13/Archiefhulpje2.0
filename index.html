@@ -2266,6 +2266,7 @@ async function startIndexing(source, rootName, readWrite = false) {
   state.rootName = rootName;
   state.rootHandle = readWrite ? source : null;
   state.canMove = readWrite;
+  setBasePath('');
 
   const progressBar = document.getElementById('progress-bar');
   const progressFill = document.getElementById('progress-fill');
@@ -2350,6 +2351,7 @@ async function startIndexing(source, rootName, readWrite = false) {
 }
 
 function askForBasePath() {
+  document.getElementById('base-path-input').value = '';
   const prompt = `Voer het volledige mappad in waar deze bestanden staan.\n\nBijvoorbeeld: C:\\Users\\mmiddelburg\\OneDrive - Waterschap\\...`;
 
   const modal = document.createElement('div');
