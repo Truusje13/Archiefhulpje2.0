@@ -802,6 +802,7 @@
   <div class="header-top">
     <h1>Archief-hulpje</h1>
     <button class="btn btn-primary" id="btn-pick-folder">Map kiezen</button>
+    <button class="btn" id="btn-set-path">Mappad instellen</button>
     <input type="file" id="fallback-folder" class="hidden-input" webkitdirectory="" multiple="">
     <span class="folder-info" id="folder-info">06 Naslagwerken — 36 bestanden (schrijfrechten: verplaatsen mogelijk)</span>
   </div>
@@ -2343,7 +2344,8 @@ async function startIndexing(source, rootName, readWrite = false) {
   askForBasePath();
 }
 
-function askForBasePath() {
+function askForBasePath(manual = false) {
+  const currentPath = getBasePath();
   const prompt = `Voer het volledige mappad in waar deze bestanden staan.\n\nBijvoorbeeld: C:\\Users\\mmiddelburg\\OneDrive - Waterschap\\...`;
 
   const modal = document.createElement('div');
@@ -2367,12 +2369,15 @@ function askForBasePath() {
     border: 1px solid var(--border);
   `;
 
+  const currentPathInfo = currentPath ? `<p style="margin-bottom: 1rem; font-size: 0.85rem; padding: 0.75rem; background: var(--accent-light); border-radius: 6px; border-left: 3px solid var(--accent);"><strong>Huidige pad:</strong> ${currentPath}</p>` : '';
+
   dialog.innerHTML = `
     <h3 style="margin-bottom: 1rem; font-family: var(--font);">Mappad invoeren</h3>
     <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--muted);">${prompt}</p>
+    ${currentPathInfo}
     <input type="text" id="path-dialog-input" placeholder="C:\\Users\\..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-family: ui-monospace, monospace; margin-bottom: 1.5rem; box-sizing: border-box;">
     <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-      <button id="path-dialog-cancel" class="btn" style="padding: 0.6rem 1.2rem;">Overslaan</button>
+      <button id="path-dialog-cancel" class="btn" style="padding: 0.6rem 1.2rem;">${manual ? 'Annuleren' : 'Overslaan'}</button>
       <button id="path-dialog-ok" class="btn btn-primary" style="padding: 0.6rem 1.2rem;">Opslaan</button>
     </div>
   `;
@@ -2381,11 +2386,16 @@ function askForBasePath() {
   document.body.appendChild(modal);
 
   const input = dialog.querySelector('#path-dialog-input');
+  input.value = currentPath;
   input.focus();
+  input.select();
 
   dialog.querySelector('#path-dialog-ok').addEventListener('click', () => {
     const path = input.value.trim();
-    setBasePath(path);
+    if (path) {
+      setBasePath(path);
+      showToast('Mappad opgeslagen');
+    }
     modal.remove();
   });
 
@@ -2451,11 +2461,18 @@ document.getElementById('btn-pick-folder').addEventListener('click', async () =>
       const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
       await startIndexing(handle, handle.name, true);
     } catch (e) {
-      if (e.name !== 'AbortError') showToast('Fout bij mapselectie: ' + e.message);
+      if (e.name !== 'AbortError') {
+        showToast('Fout bij mapselectie: ' + e.message + '\n\nAlternatief: gebruik "Mappad instellen" om handmatig het pad in te voeren.');
+        document.getElementById('fallback-folder').click();
+      }
     }
   } else {
     document.getElementById('fallback-folder').click();
   }
+});
+
+document.getElementById('btn-set-path').addEventListener('click', () => {
+  askForBasePath(true);
 });
 
 document.getElementById('fallback-folder').addEventListener('change', async e => {
