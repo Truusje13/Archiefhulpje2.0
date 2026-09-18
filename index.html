@@ -985,6 +985,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
+console.log('Archiefhulpje script laadt...');
+
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
 const EXT_ICONS = {
@@ -2473,15 +2475,21 @@ document.querySelectorAll('.main-tab').forEach(btn => {
 // ─── Event handlers ──────────────────────────────────────────────────────────
 
 document.getElementById('btn-pick-folder').addEventListener('click', async () => {
+  console.log('Map kiezen geklikt');
   if ('showDirectoryPicker' in window) {
+    console.log('showDirectoryPicker beschikbaar, proberen...');
     try {
       const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      console.log('Map geselecteerd:', handle.name);
       await startIndexing(handle, handle.name, true);
     } catch (e) {
       if (e.name !== 'AbortError') {
         console.error('showDirectoryPicker fout:', e.name, e.message);
         showToast('Mapselectie niet beschikbaar. Gebruik de fallback bestandskiezer...');
+        console.log('Fallback wordt gebruikt...');
         document.getElementById('fallback-folder').click();
+      } else {
+        console.log('Gebruiker heeft mapselectie geannuleerd');
       }
     }
   } else {
@@ -2495,18 +2503,31 @@ document.getElementById('btn-set-path').addEventListener('click', () => {
 });
 
 document.getElementById('fallback-folder').addEventListener('change', async e => {
+  console.log('Fallback folder input veranderd');
   try {
     const files = Array.from(e.target.files);
-    if (!files.length) return;
+    console.log(`${files.length} bestanden geselecteerd`);
+
+    if (!files.length) {
+      console.log('Geen bestanden gevonden');
+      return;
+    }
 
     const relPath = files[0].webkitRelativePath || files[0].name;
+    console.log('Eerste bestand:', relPath);
+    console.log('webkitRelativePath beschikbaar:', !!files[0].webkitRelativePath);
+
     const rootName = relPath ? relPath.split('/')[0] : 'Geüploade bestanden';
+    console.log('Root map naam:', rootName);
 
     if (!files[0].webkitRelativePath) {
+      console.warn('webkitRelativePath niet beschikbaar - mogelijk alleen losse bestanden');
       showToast('Tip: Zorg dat je een mapstructuur selecteert, niet alleen losse bestanden');
     }
 
+    console.log('Indexering starten...');
     await startIndexing(files, rootName, false);
+    console.log('Indexering voltooid');
   } catch (err) {
     console.error('Fout bij mapkeuze:', err);
     showToast('Fout bij mapkeuze. Probeer opnieuw of controleer console (F12) voor details.');
@@ -2590,6 +2611,14 @@ document.getElementById('btn-move-group').addEventListener('click', async () => 
 });
 
 renderGroups();
+
+// Controleer of event listeners zijn geregistreerd
+console.log('Event listeners geregistreerd:');
+console.log('- btn-pick-folder:', document.getElementById('btn-pick-folder') ? 'ja' : 'NEE');
+console.log('- btn-set-path:', document.getElementById('btn-set-path') ? 'ja' : 'NEE');
+console.log('- fallback-folder:', document.getElementById('fallback-folder') ? 'ja' : 'NEE');
+console.log('- search:', document.getElementById('search') ? 'ja' : 'NEE');
+console.log('Archiefhulpje script geladen en klaar!');
 </script>
 
 
