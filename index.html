@@ -2254,38 +2254,46 @@ function renderAutocomplete(query) {
 // ─── Indexing flow ───────────────────────────────────────────────────────────
 
 async function startIndexing(source, rootName, readWrite = false) {
-  state.indexing = true;
-  state.files = [];
-  state.handleMap.clear();
-  state.rootName = rootName;
-  state.rootHandle = readWrite ? source : null;
-  state.canMove = readWrite;
-  setBasePath('');
-
   const progressBar = document.getElementById('progress-bar');
   const progressFill = document.getElementById('progress-fill');
-  progressBar.classList.add('active');
-  progressFill.style.width = '5%';
 
-  setLoading(true, {
-    title: 'Map indexeren…',
-    status: 'Bestanden scannen',
-    detail: rootName,
-    progress: 5,
-  });
+  try {
+    state.indexing = true;
+    state.files = [];
+    state.handleMap.clear();
+    state.rootName = rootName;
+    state.rootHandle = readWrite ? source : null;
+    state.canMove = readWrite;
+    setBasePath('');
+    progressBar.classList.add('active');
+    progressFill.style.width = '5%';
 
-  document.getElementById('folder-info').textContent = `Indexeren: ${rootName}…`;
-  document.getElementById('search').disabled = true;
-  document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('results-area').style.display = 'block';
-  document.getElementById('results').innerHTML = '<p style="color:var(--muted);padding:2rem;text-align:center">Indexeren…</p>';
+    setLoading(true, {
+      title: 'Map indexeren…',
+      status: 'Bestanden scannen',
+      detail: rootName,
+      progress: 5,
+    });
 
-  let files;
-  if (readWrite && source.entries) {
-    files = await indexWithHandles(source);
-  } else {
-    files = await indexWithFileList(source, rootName);
-  }
+    document.getElementById('folder-info').textContent = `Indexeren: ${rootName}…`;
+    document.getElementById('search').disabled = true;
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('results-area').style.display = 'block';
+    document.getElementById('results').innerHTML = '<p style="color:var(--muted);padding:2rem;text-align:center">Indexeren…</p>';
+
+    let files;
+    if (readWrite && source.entries) {
+      files = await indexWithHandles(source);
+    } else {
+      files = await indexWithFileList(source, rootName);
+    }
+
+    if (!files || files.length === 0) {
+      console.warn('Geen bestanden gevonden in', rootName);
+      showToast('Geen bestanden gevonden. Zorg dat de map bestanden bevat.');
+      state.indexing = false;
+      return;
+    }
 
   progressFill.style.width = '35%';
   setLoading(true, {
@@ -2337,11 +2345,20 @@ async function startIndexing(source, rootName, readWrite = false) {
   document.getElementById('index-stats').textContent =
     `${officeCount} Office-documenten geïndexeerd`;
 
-  updateFilterUI();
-  renderResults();
-  state.indexing = false;
+    updateFilterUI();
+    renderResults();
+    state.indexing = false;
 
-  askForBasePath();
+    askForBasePath();
+  } catch (err) {
+    console.error('Fout bij indexeren:', err);
+    state.indexing = false;
+    const msg = err.message || String(err);
+    showToast(`Fout bij indexeren: ${msg}`);
+    document.getElementById('search').disabled = false;
+    progressBar.classList.remove('active');
+    setLoading(false);
+  }
 }
 
 function askForBasePath(manual = false) {
@@ -2462,11 +2479,13 @@ document.getElementById('btn-pick-folder').addEventListener('click', async () =>
       await startIndexing(handle, handle.name, true);
     } catch (e) {
       if (e.name !== 'AbortError') {
-        showToast('Fout bij mapselectie: ' + e.message + '\n\nAlternatief: gebruik "Mappad instellen" om handmatig het pad in te voeren.');
+        console.error('showDirectoryPicker fout:', e.name, e.message);
+        showToast('Mapselectie niet beschikbaar. Gebruik de fallback bestandskiezer...');
         document.getElementById('fallback-folder').click();
       }
     }
   } else {
+    console.log('showDirectoryPicker niet beschikbaar, fallback...');
     document.getElementById('fallback-folder').click();
   }
 });
@@ -2476,10 +2495,22 @@ document.getElementById('btn-set-path').addEventListener('click', () => {
 });
 
 document.getElementById('fallback-folder').addEventListener('change', async e => {
-  const files = Array.from(e.target.files);
-  if (!files.length) return;
-  const rootName = files[0].webkitRelativePath.split('/')[0];
-  await startIndexing(files, rootName, false);
+  try {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    const relPath = files[0].webkitRelativePath || files[0].name;
+    const rootName = relPath ? relPath.split('/')[0] : 'Geüploade bestanden';
+
+    if (!files[0].webkitRelativePath) {
+      showToast('Tip: Zorg dat je een mapstructuur selecteert, niet alleen losse bestanden');
+    }
+
+    await startIndexing(files, rootName, false);
+  } catch (err) {
+    console.error('Fout bij mapkeuze:', err);
+    showToast('Fout bij mapkeuze. Probeer opnieuw of controleer console (F12) voor details.');
+  }
 });
 
 let searchRaf = 0;
